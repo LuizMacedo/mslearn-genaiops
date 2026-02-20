@@ -12,13 +12,34 @@ import os
 import sys
 import json
 import pytest
+from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
 
-load_dotenv()
+
+def load_env_with_fallbacks(env_path: Path) -> None:
+    encodings = [None, "utf-8-sig", "utf-16", "utf-16-le", "utf-16-be"]
+    last_error = None
+
+    for encoding in encodings:
+        try:
+            if encoding is None:
+                load_dotenv(env_path)
+            else:
+                load_dotenv(env_path, encoding=encoding)
+            return
+        except UnicodeDecodeError as ex:
+            last_error = ex
+
+    raise RuntimeError(f"Unable to read .env file at {env_path}. Please save it as UTF-8.") from last_error
+
+
+repo_root = Path(__file__).resolve().parents[2]
+env_file = repo_root / '.env'
+load_env_with_fallbacks(env_file)
 
 
 class TrailGuideAgentTestSuite:
